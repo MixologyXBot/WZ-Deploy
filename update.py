@@ -17,7 +17,24 @@ from subprocess import run as srun, call as scall
 
 getLogger("pymongo").setLevel(ERROR)
 
-var_list = ['BOT_TOKEN', 'TELEGRAM_API', 'TELEGRAM_HASH', 'OWNER_ID', 'DATABASE_URL', 'BASE_URL', 'UPSTREAM_REPO', 'UPSTREAM_BRANCH']
+var_list = [
+    "BOT_TOKEN",
+    "TELEGRAM_API",
+    "TELEGRAM_HASH",
+    "OWNER_ID",
+    "DATABASE_URL",
+    "BASE_URL",
+    "UPSTREAM_REPO",
+    "UPSTREAM_BRANCH",
+    "UPDATE_PKGS",
+]
+
+if path.exists("log.txt"):
+    with open("log.txt", "r+") as f:
+        f.truncate(0)
+
+if path.exists("rlog.txt"):
+    remove("rlog.txt")
 
 basicConfig(
     format="[%(asctime)s] [%(levelname)s] - %(message)s",
@@ -36,7 +53,11 @@ except ModuleNotFoundError:
     log_info("Config.py file is not Added! Checking ENVs..")
     config_file = {}
 
-env_updates = {key: value.strip() if isinstance(value, str) else value for key, value in environ.items() if key in var_list}
+env_updates = {
+    key: value.strip() if isinstance(value, str) else value
+    for key, value in environ.items()
+    if key in var_list
+}
 if env_updates:
     log_info("Config data is updated with ENVs!")
     config_file.update(env_updates)
@@ -67,23 +88,32 @@ if DATABASE_URL := config_file.get("DATABASE_URL", "").strip():
 UPSTREAM_REPO = config_file.get("UPSTREAM_REPO", "").strip()
 UPSTREAM_BRANCH = config_file.get("UPSTREAM_BRANCH", "").strip() or "wzv3"
 
+# Save local config.py before upstream update to preserve deployment config
+local_config_content = None
+if path.exists("config.py"):
+    with open("config.py", "r") as f:
+        local_config_content = f.read()
+
 if UPSTREAM_REPO:
     if path.exists(".git"):
         srun(["rm", "-rf", ".git"])
 
     update = srun(
-        [
-            f"git init -q \
+        [f"git init -q \
                      && git config --global user.email 105407900+SilentDemonSD@users.noreply.github.com \
                      && git config --global user.name SilentDemonSD \
                      && git add . \
                      && git commit -sm update -q \
                      && git remote add origin {UPSTREAM_REPO} \
                      && git fetch origin -q \
-                     && git reset --hard origin/{UPSTREAM_BRANCH} -q"
-        ],
+                     && git reset --hard origin/{UPSTREAM_BRANCH} -q"],
         shell=True,
     )
+
+    # Restore local config.py after upstream update to preserve deployment config
+    if local_config_content is not None:
+        with open("config.py", "w") as f:
+            f.write(local_config_content)
 
     repo = UPSTREAM_REPO.split("/")
     UPSTREAM_REPO = f"https://github.com/{repo[-2]}/{repo[-1]}"
