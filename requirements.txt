@@ -27,7 +27,7 @@ pillow
 psutil
 pycountry
 pymongo
-pyrotgfork
+wzgram
 python-magic
 pytz
 qbittorrent-api
@@ -35,7 +35,6 @@ requests
 speedtest-cli
 telegraph
 tenacity
-tgcrypto
 urllib3
 uvicorn
 uvloop
